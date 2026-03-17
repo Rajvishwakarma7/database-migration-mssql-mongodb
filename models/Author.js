@@ -9,7 +9,7 @@ const authorSchema = new Schema(
     isActive: { type: Boolean, default: true },
     isDeleted: { type: Boolean, default: false },
   },
-  { timestamps: true },
+  { timestamps: true ,strict: false},
 );
 
 const Author = mongoose.model('authors', authorSchema);

@@ -8,44 +8,62 @@ async function migrateAuthors() {
     await connectMSSQL();
     await connectMongo();
 
-    // Fetch all authors / speakers from MSSQL
     const result = await sql.query(`
-      SELECT * FROM dbo.SpeakerEntity
+   SELECT 
+    se.description,
+    se.contactInfo,
+    ei.title AS speaker_name,
+    ei.active,
+    fe.filePath,
+    fe.alternateFilePath,
+       
+    se.speakerID,
+    ei.entityID,
+    eitem.parentEntityID,
+    fe.fileID
+
+FROM dbo.SpeakerEntity se
+
+JOIN dbo.EntityItem ei
+ON se.speakerID = ei.entityID
+
+LEFT JOIN dbo.EntityItem eitem
+ON se.speakerID = eitem.parentEntityID
+
+LEFT JOIN dbo.FileEntity fe
+ON eitem.entityID = fe.fileID
+    
     `);
 
-    console.log("Total authors:", result.recordset.length);
-
-    // Avoid duplicates based on fullName
-    const nameSet = new Set();
+    const speakerIDSet = new Set();
 
     const authors = result.recordset
-      .filter((a) => a.fullName && a.fullName.trim() !== "")
-      .filter((a) => {
-        const name = a.fullName.trim();
-        if (nameSet.has(name)) return false;
-        nameSet.add(name);
+      .filter((u) => {
+        const speakerID = u.speakerID;
+
+        if (speakerIDSet.has(speakerID)) return false;
+
+        speakerIDSet.add(speakerID);
         return true;
       })
-      .map((a) => {
-        const { fullName, bio, profilePicture, contactInfo, ...rest } = a;
-
+      .map((row) => {
+        console.log(row);
         return {
-          ...rest, // keep other MSSQL fields if needed
-          fullName: fullName.trim(),
-          bio: bio || "",
-          profilePicture: profilePicture || "",
-          contactInfo: contactInfo || "",
-          isActive: true,
-          isDeleted: false,
+          ...row,
+          fullName: row.speaker_name,
+          bio: row.description,
+          profilePicture: row.filePath || null,
+          contactInfo: row.contactInfo,
+          isActive: row.active === 1,
         };
       });
 
     const inserted = await Author.insertMany(authors, { ordered: false });
 
     console.log("Inserted authors:", inserted.length);
-    console.log("Authors migration complete");
+    console.log("Migration complete");
 
-    process.exit();
+    process.exit(0);
   } catch (error) {
     console.error("Error migrating authors:", error);
     process.exit(1);
