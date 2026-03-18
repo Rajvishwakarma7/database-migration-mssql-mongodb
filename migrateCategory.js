@@ -11,7 +11,7 @@ async function migrateData() {
     const result = await sql.query(`
   SELECT *
 FROM dbo.Tags 
-WHERE tagTypeID =1
+
     `);
 
     const tagIdIDSet = new Set();
