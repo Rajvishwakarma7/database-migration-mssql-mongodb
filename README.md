@@ -27,15 +27,18 @@ Uses `mssql` (source), `mongoose` (target), bulk `insertMany()` with deduping.
    npm install
    ```
 
-2. **.env Setup:**
+2. **.env Setup (example—dummy values):**
    ```
-   MSSQL_USER=your_user
-   MSSQL_PASSWORD=your_pass
-   MSSQL_SERVER=server
-   MSSQL_DATABASE=your_db
+   MSSQL_USER=dummy_user
+   MSSQL_PASSWORD=dummy_password_123
+   MSSQL_SERVER=dummy-server.local
+   MSSQL_DATABASE=dummy_db
+   MSSQL_PORT=1433
 
-   MONGO_URI=mongodb://localhost:27017/your_db
+   MONGO_URI=mongodb+srv://dummy:dummy_pass@cluster0.dummy.net/dummy_db
+   DB_NAME=dummy_db
    ```
+   *Replace ALL with your real values!*
 
 3. **Run Examples:**
    ```bash
