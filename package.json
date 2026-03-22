@@ -1,5 +1,5 @@
 {
-  "name": "aish_audio_migration",
+  "name": "sql_migration",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
