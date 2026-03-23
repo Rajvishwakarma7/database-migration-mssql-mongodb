@@ -139,6 +139,36 @@ async function migrateData() {
     //   }
     // }
 
+    // migrate field for class is free or not --------------------step5--------
+
+
+
+
+    const result = await sql.query(
+      `
+      SELECT * 
+      from dbo.CatalogItemXrefPortal
+      WHERE isVisible =1
+      `
+
+    )
+    for(const item of result.recordset){
+
+
+      const classObj = await Classes.findOne({ classID: item.catalogItemID });
+      if(classObj){
+        await Classes.updateOne(
+          { _id: classObj._id },
+          {
+            $set: {
+              classType: item.isFree === 1 ? "paid" : "free"
+            },
+          },
+        );
+        console.log(`Updated class ${classObj._id} ${classObj.classType} ${item.isFree} ${item.catalogItemID}`);
+      }
+    }
+    console.log("Migration complete");
     process.exit(0);
   } catch (error) {
     console.error("Error migrating :", error);
