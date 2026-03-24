@@ -141,33 +141,66 @@ async function migrateData() {
 
     // migrate field for class is free or not --------------------step5--------
 
+    // const result = await sql.query(
+    //   `
+    //   SELECT *
+    //   from dbo.CatalogItemXrefPortal
+    //   WHERE isVisible =1
+    //   `
 
+    // )
+    // for(const item of result.recordset){
 
+    //   const classObj = await Classes.findOne({ classID: item.catalogItemID });
+    //   if(classObj){
+    //     await Classes.updateOne(
+    //       { _id: classObj._id },
+    //       {
+    //         $set: {
+    //           classType: item.isFree === 1 ? "paid" : "free"
+    //         },
+    //       },
+    //     );
+    //     console.log(`Updated class ${classObj._id} ${classObj.classType} ${item.isFree} ${item.catalogItemID}`);
+    //   }
+    // }
 
-    const result = await sql.query(
-      `
-      SELECT * 
-      from dbo.CatalogItemXrefPortal
-      WHERE isVisible =1
-      `
+    // migrate field for class is free or not --------------------step6--------
 
-    )
-    for(const item of result.recordset){
+    // const result = await sql.query(
+    //   `
+    //   SELECT * 
+    //   from dbo.ClassEntity
+    //   `,
+    // );
+    const result = await sql.query(`
+  SELECT 
+    *,
+    DATEDIFF(SECOND, '00:00:00', duration) AS durationSeconds
+  FROM dbo.ClassEntity
+`);
+for (const item of result.recordset) {
+  const totalSeconds = item.durationSeconds || 0;
 
+  // console.log(totalSeconds);
+  // console.log(item.duration);
+  // console.log(item);
 
-      const classObj = await Classes.findOne({ classID: item.catalogItemID });
-      if(classObj){
-        await Classes.updateOne(
-          { _id: classObj._id },
-          {
-            $set: {
-              classType: item.isFree === 1 ? "paid" : "free"
-            },
-          },
-        );
-        console.log(`Updated class ${classObj._id} ${classObj.classType} ${item.isFree} ${item.catalogItemID}`);
-      }
-    }
+  const classObj = await Classes.findOne({ classID: item.classID });
+
+  if (classObj) {
+    await Classes.updateOne(
+      { _id: classObj._id },
+      {
+        $set: {
+          durationSeconds: totalSeconds,
+        },
+      },
+    );
+    console.log(`Updated class ${classObj._id} → ${totalSeconds}s`);
+  }
+}
+
     console.log("Migration complete");
     process.exit(0);
   } catch (error) {
