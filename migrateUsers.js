@@ -8,49 +8,92 @@ async function migrateUsers() {
     await connectMSSQL();
     await connectMongo();
 
+    // ✅ Updated SQL (deduplicated + 3 tables)
     const result = await sql.query(`
-      SELECT * FROM aish613com.all_users
+      SELECT *
+      FROM (
+          SELECT  
+              ms.UserId,
+              ms.firstName,
+              ms.lastName,
+              ms.country,
+              ms.state,
+              ms.city,
+              ms.postalCode,
+              ms.phone,
+              ms.refferedBy,
+              ms.freeOfferCnt,
+              ms.balance,
+              ms.subscribeActivation,
+              ms.firstActivation,
+
+              asm.Email AS email,
+              asm.CreateDate,
+              asm.LastLoginDate,
+              asm.IsApproved,
+
+              ROW_NUMBER() OVER (
+                  PARTITION BY LOWER(LTRIM(RTRIM(asm.Email)))
+                  ORDER BY asm.CreateDate DESC
+              ) AS rn
+
+          FROM dbo.Membership ms
+          INNER JOIN dbo.aspnet_Users au 
+              ON ms.UserId = au.UserId
+          INNER JOIN dbo.aspnet_Membership asm 
+              ON ms.UserId = asm.UserId
+
+          WHERE asm.Email IS NOT NULL
+            AND LTRIM(RTRIM(asm.Email)) <> ''
+      ) t
+      WHERE t.rn = 1
+      ORDER BY t.CreateDate DESC;
     `);
 
-    console.log("Total users:", result.recordset.length);
+    console.log("Total users (deduplicated):", result.recordset.length);
 
     const DEFAULT_ROLE = "696623359d3e61fdd99d3f48";
-    const emailSet = new Set();
+
+    // ✅ Fetch existing emails to avoid duplicate inserts
+    const existingUsers = await User.find({}, { email: 1 });
+    const existingEmailSet = new Set(
+      existingUsers.map((u) => u.email.toLowerCase())
+    );
 
     const users = result.recordset
-      .filter((u) => u.email && u.email.trim() !== "")
       .filter((u) => {
-        const email = u.email.trim().toLowerCase();
-
-        if (emailSet.has(email)) return false;
-
-        emailSet.add(email);
-        return true;
+        const email = u.email?.trim().toLowerCase();
+        return email && !existingEmailSet.has(email);
       })
       .map((u) => {
-        const {
-          fname,
-          lname,
-          pw,
-          homephone,
-          dayphone,
-          address1,
-          emailvalid,
-          ...rest
-        } = u; // rest contains all other SQL fields (uid, etc.)
-
         return {
-          ...rest, // keep all other SQL fields
+          ...u, // ✅ keep all extra SQL fields (strict: false)
+
           email: u.email.toLowerCase(),
-          firstName: fname,
-          lastName: lname,
-          password: pw || "TEMP_PASSWORD",
+          firstName: u.firstName,
+          lastName: u.lastName,
+          password: "TEMP_PASSWORD", // ⚠️ you can improve later
           roleId: DEFAULT_ROLE,
-          phone: homephone || dayphone,
-          address: address1,
-          isVerified: emailvalid === "Y" || false,
+
+          phone: u.phone || null,
+          address: u.postalAdderss || null, // if exists
+          city: u.city,
+          state: u.state,
+          country: u.country,
+          zip: u.postalCode,
+
+          referredBy: u.refferedBy, // ✅ mapped correctly
+          isVerified: u.IsApproved === true,
+
+          // Optional mappings
+          notes: null,
         };
       });
+
+    if (users.length === 0) {
+      console.log("No new users to insert");
+      process.exit();
+    }
 
     const inserted = await User.insertMany(users, { ordered: false });
 
