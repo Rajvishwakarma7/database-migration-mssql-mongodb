@@ -10,75 +10,83 @@ async function migrateTransactions() {
     await connectMSSQL();
     await connectMongo();
 
-    //     const result = await sql.query(`
-    //       SELECT DISTINCT
-    //  sp.shoppingTransactionID, sp.shoppingStateID, sp.UserId,sp.price1,sp.price2,sp.count,sp.unlimitedAccessInLibrary,sp.count,
-    //  st.createDate,st.amount,st.holdBalance,st.tranID,st.comment,st.response,st.chargetype,st.transactionState
-    // FROM [aishaudiodb2].[dbo].[Shopping] sp
-    // INNER JOIN [aishaudiodb2].[dbo].[ShoppingTransaction] st
-    // ON sp.shoppingTransactionID = st.shoppingTransactionID
-    // WHERE st.chargetype IS NOT NULL;
+//     const result = await sql.query(
+//       `
+//       SELECT 
+//     st.shoppingTransactionID as shopID,
+//     st.createDate,
+//     st.amount,
+//     st.holdBalance,
 
-    //     `);
+//     st.chargetype,
+//     st.response,
+//     st.tranID as transactionId,
+//     m.tranID,
+//     m.shoppingTransactionID,
 
-    //     const transactions = result.recordset.map((row) => {
-    //       return {
-    //         sqlUserId: row.UserId,
+//     mp.UserId
+ 
+// FROM dbo.MembershipXrefSubscribePlan mp
+//  JOIN dbo.MembershipCart m
+//     ON mp.UserId = m.UserId
+//  JOIN dbo.ShoppingTransaction st
+//     ON st.shoppingTransactionID = m.shoppingTransactionID
+// WHERE st.chargetype ='authorize'
+//       `,
+//     );
 
-    //         transactionId: row.shoppingTransactionID,
+//     const transactions = result.recordset.map((row) => {
+//       return {
+//         sqlUserId: row.UserId,
 
-    //         amount: parseFloat(row.amount) || 0,
-    //         holdBalance: parseFloat(row.holdBalance) || 0,
+//         transactionId: row.shoppingTransactionID,
 
-    //         type: row.chargetype,
+//         amount: parseFloat(row.amount) || 0,
+//         holdBalance: parseFloat(row.holdBalance) || 0,
 
-    //         // ✅ Status mapping
-    //         status:
-    //           row.shoppingStateID === 3
-    //             ? "failed"
-    //             : "success",
+//         type: row.chargetype,
 
-    //         transactionDate: row.createDate,
+//         // ✅ Status mapping
+//         status: row.response === "Y" ? "success" : "failed",
 
-    //         paymentToken:row.tranID,
+//         transactionDate: row.createDate,
 
-    //         // ✅ preserve original time
-    //         createdAt: row.createDate,
-    //         updatedAt: row.createDate,
-    //         response: row.response,
-    //         comment: row.comment,
-    //         shoppingStateID: row.shoppingStateID,
+//         paymentToken: row.transactionId,
 
-    //       };
-    //     });
+//         // ✅ preserve original time
+//         createdAt: row.createDate,
+//         updatedAt: row.createDate,
+//         response: row.response,
+//       };
+//     });
 
-    //     const inserted = await ETransaction.insertMany(transactions, {
-    //       ordered: false,
-    //     });
+//     const inserted = await ETransaction.insertMany(transactions, {
+//       ordered: false,
+//     });
 
-    //     console.log("Inserted transactions:", inserted.length);
+//     console.log("Inserted transactions:", inserted.length);
 
-    // const eSubTransactions = await ESubscription.find();
+    // step2 -----------------------------------------------------
 
-    // for (const tx of eSubTransactions) {
-    //   const userData = await Users.findOne({ _id: tx.userId });
-    //   if (userData) {
-    //     const result = await ETransaction.updateMany(
-    //       { sqlUserId: userData.UserId },
-    //       { $set: { userId: userData._id } },
-    //     );
-    //     console.log(
-    //       "Updated transactions for userId:",
-    //       tx.userId,
-    //       "Matched count:",
-    //       result.matchedCount,
-    //       "Modified count:",
-    //       result.modifiedCount,
-    //     );
-    //   }
-    // }
+    const eTransactions = await ETransaction.find();
 
-
+    for (const tx of eTransactions) {
+      const userData = await Users.findOne({ UserId: tx.sqlUserId });
+      if (userData) {
+        const result = await ETransaction.updateMany(
+          { sqlUserId: userData.UserId },
+          { $set: { userId: userData._id } },
+        );
+        console.log(
+          "Updated transactions for userId:",
+          tx.userId,
+          "Matched count:",
+          result.matchedCount,
+          "Modified count:",
+          result.modifiedCount,
+        );
+      }
+    }
 
     console.log("Migration complete");
 
