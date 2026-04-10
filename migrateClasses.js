@@ -173,33 +173,59 @@ async function migrateData() {
     //   from dbo.ClassEntity
     //   `,
     // );
-    const result = await sql.query(`
-  SELECT 
-    *,
-    DATEDIFF(SECOND, '00:00:00', duration) AS durationSeconds
-  FROM dbo.ClassEntity
-`);
-for (const item of result.recordset) {
-  const totalSeconds = item.durationSeconds || 0;
+//     const result = await sql.query(`
+//   SELECT 
+//     *,
+//     DATEDIFF(SECOND, '00:00:00', duration) AS durationSeconds
+//   FROM dbo.ClassEntity
+// `);
+// for (const item of result.recordset) {
+//   const totalSeconds = item.durationSeconds || 0;
 
-  // console.log(totalSeconds);
-  // console.log(item.duration);
-  // console.log(item);
 
-  const classObj = await Classes.findOne({ classID: item.classID });
 
-  if (classObj) {
-    await Classes.updateOne(
-      { _id: classObj._id },
-      {
-        $set: {
-          durationSeconds: totalSeconds,
+//   const classObj = await Classes.findOne({ classID: item.classID });
+
+//   if (classObj) {
+//     await Classes.updateOne(
+//       { _id: classObj._id },
+//       {
+//         $set: {
+//           durationSeconds: totalSeconds,
+//         },
+//       },
+//     );
+//     console.log(`Updated class ${classObj._id} → ${totalSeconds}s`);
+//   }
+// }
+
+ // migrate class code --------------------step7--------
+
+   const classObj = await Classes.find({});
+   
+   for(let char of classObj){
+    
+    if(char?.entityID){
+      const result = await sql.query(
+        `
+        SELECT *
+        from dbo.CatalogItemExtend
+        WHERE entityID = ${char.entityID}
+        `
+      )
+
+      await Classes.updateOne(
+        { _id: char._id },
+        {
+          $set: {
+            code: result?.recordset?.[0]?.code || null
+          },
         },
-      },
-    );
-    console.log(`Updated class ${classObj._id} → ${totalSeconds}s`);
-  }
-}
+      );
+      console.log(`Updated class ${char._id} → ${result?.recordset?.[0]?.code || null}`);
+
+    }
+   }
 
     console.log("Migration complete");
     process.exit(0);

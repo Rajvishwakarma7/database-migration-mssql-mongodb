@@ -3,92 +3,82 @@ import { connectMongo } from "./db/mongo.js";
 import sql from "mssql";
 import ETransaction from "./models/ETransaction.js";
 import Users from "./models/User.js";
+import ESubscription from "./models/ESubscription.js";
 
 async function migrateTransactions() {
   try {
     await connectMSSQL();
     await connectMongo();
 
-    // const result = await sql.query(`
-    //   SELECT 
-    //     mc.UserId,
-    //     mc.membershipCartID,
-    //     mc.cartStateID,
-    //     mc.expirationDate,
-    //     mc.cartTypeID,
-    //     mc.tranID as cartTranID,
+    //     const result = await sql.query(`
+    //       SELECT DISTINCT
+    //  sp.shoppingTransactionID, sp.shoppingStateID, sp.UserId,sp.price1,sp.price2,sp.count,sp.unlimitedAccessInLibrary,sp.count,
+    //  st.createDate,st.amount,st.holdBalance,st.tranID,st.comment,st.response,st.chargetype,st.transactionState
+    // FROM [aishaudiodb2].[dbo].[Shopping] sp
+    // INNER JOIN [aishaudiodb2].[dbo].[ShoppingTransaction] st
+    // ON sp.shoppingTransactionID = st.shoppingTransactionID
+    // WHERE st.chargetype IS NOT NULL;
 
-    //     st.shoppingTransactionID,
-    //     st.createDate,
-    //     st.amount,
-    //     st.holdBalance,
-    //     st.tranID,
-    //     st.comment,
-    //     st.response,
-    //     st.chargetype,
-    //     st.transactionState
+    //     `);
 
-    //   FROM dbo.MembershipCart mc
-    //   INNER JOIN dbo.ShoppingTransaction st
-    //   ON mc.shoppingTransactionID = st.shoppingTransactionID
-    // `);
+    //     const transactions = result.recordset.map((row) => {
+    //       return {
+    //         sqlUserId: row.UserId,
 
-    // const transactions = result.recordset.map((row) => {
-    //   return {
-    //     userId: row.UserId,
+    //         transactionId: row.shoppingTransactionID,
 
-    //     transactionId: row.shoppingTransactionID,
+    //         amount: parseFloat(row.amount) || 0,
+    //         holdBalance: parseFloat(row.holdBalance) || 0,
 
-    //     amount: parseFloat(row.amount) || 0,
-    //     holdBalance: parseFloat(row.holdBalance) || 0,
+    //         type: row.chargetype,
 
-    //     type: row.chargetype,
+    //         // ✅ Status mapping
+    //         status:
+    //           row.shoppingStateID === 3
+    //             ? "failed"
+    //             : "success",
 
-    //     // ✅ Status mapping
-    //     status:
-    //       row.transactionState === 2
-    //         ? "success"
-    //         : "failed",
+    //         transactionDate: row.createDate,
 
-    //     gateway: {
-    //       name: "eProcessingNetwork",
-    //       transactionId: row.tranID || row.cartTranID,
-    //       response: row.response,
-    //     },
+    //         paymentToken:row.tranID,
 
-    //     cart: {
-    //       membershipCartID: row.membershipCartID,
-    //       cartStateID: row.cartStateID,
-    //       cartTypeID: row.cartTypeID,
-    //       expirationDate: row.expirationDate,
-    //     },
+    //         // ✅ preserve original time
+    //         createdAt: row.createDate,
+    //         updatedAt: row.createDate,
+    //         response: row.response,
+    //         comment: row.comment,
+    //         shoppingStateID: row.shoppingStateID,
 
-    //     transactionDate: row.createDate,
+    //       };
+    //     });
 
-    //     // ✅ preserve original time
-    //     createdAt: row.createDate,
-    //     updatedAt: row.createDate,
-    //   };
-    // });
+    //     const inserted = await ETransaction.insertMany(transactions, {
+    //       ordered: false,
+    //     });
 
-    // const inserted = await ETransaction.insertMany(transactions, {
-    //   ordered: false,
-    // });
+    //     console.log("Inserted transactions:", inserted.length);
 
-    // console.log("Inserted transactions:", inserted.length);
+    // const eSubTransactions = await ESubscription.find();
 
-    // const transactions = await ETransaction.find({});
-    // console.log("Total transactions in MongoDB:", transactions.length);
-
-    // for (const tx of transactions) {
-    //   console.log(`Transaction ID: ${tx.transactionId}, Amount: ${tx.amount}, Status: ${tx.status}`);
-    //     const userData = await Users.findOne({ UserId: tx.userId });
-    //       if(userData){
-    //           tx.userRef = userData._id.toString();
-    //           await tx.save();
-    //           console.log(`User ${tx?.userRef} has ${tx.userId} transactions`);
-    //       }
+    // for (const tx of eSubTransactions) {
+    //   const userData = await Users.findOne({ _id: tx.userId });
+    //   if (userData) {
+    //     const result = await ETransaction.updateMany(
+    //       { sqlUserId: userData.UserId },
+    //       { $set: { userId: userData._id } },
+    //     );
+    //     console.log(
+    //       "Updated transactions for userId:",
+    //       tx.userId,
+    //       "Matched count:",
+    //       result.matchedCount,
+    //       "Modified count:",
+    //       result.modifiedCount,
+    //     );
+    //   }
     // }
+
+
 
     console.log("Migration complete");
 

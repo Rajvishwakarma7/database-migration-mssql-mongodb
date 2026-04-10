@@ -3,69 +3,66 @@ import mongoose, { Schema } from "mongoose";
 const eTransactionSchema = new Schema(
   {
     userId: {
-      type: String, // GUID from SQL
-      index: true,
-      required: true,
-    },
-
-    userRef: {
       type: Schema.Types.ObjectId,
       ref: "users",
-      default: null,
-      index: true,
     },
-
     transactionId: {
-      type: Number, // shoppingTransactionID
-      index: true,
+      type: String,
+      required: true,
+      // Tran_token from ePN response
     },
-
+    paymentToken: {
+      type: String,
+      trim: true,
+      default: null,
+      // eslint-disable-next-line spellcheck/spell-checker
+      // XactID from ePN response,
+    },
     amount: {
       type: Number,
       default: 0,
     },
-
     holdBalance: {
       type: Number,
-      default: 0,
     },
-
     type: {
-      type: String, // authorize / purchase
+      type: String,
+      trim: true,
     },
-
     status: {
-      type: String, // success / failed
+      type: String,
+      trim: true,
+      enum: ["pending", "success", "failed", "cancelled", "refunded"],
     },
-
-    gateway: {
-      name: {
-        type: String,
-        default: "eProcessingNetwork",
-      },
-      transactionId: String, // tranID
-      response: String,
+    transactionDate: {
+      type: Date,
     },
-
-    paymentMeta: {
-      ccLast4: String,
-      ccExp: String,
+    invoice: {
+      type: String,
+      trim: true,
+      default: null,
     },
-
-    cart: {
-      membershipCartID: String,
-      cartStateID: Number,
-      cartTypeID: String,
-      expirationDate: Date,
+    sqlUserId: {
+      type: String,
+      trim: true,
     },
-
-    transactionDate: Date,
+    comment: {
+    type: String,
+      trim: true,
+    },
+     response: {
+      type: String,
+      trim: true,
+    },
+     shoppingStateID: {
+      type: Number,
+    },
   },
   {
     timestamps: true,
-  }
+  },
 );
 
-const ETransaction = mongoose.model("e_transactions", eTransactionSchema);
+const ETransaction = mongoose.model("etransactions", eTransactionSchema);
 
 export default ETransaction;
