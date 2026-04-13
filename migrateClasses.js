@@ -141,29 +141,38 @@ async function migrateData() {
 
     // migrate field for class is free or not --------------------step5--------
 
-    // const result = await sql.query(
-    //   `
-    //   SELECT *
-    //   from dbo.CatalogItemXrefPortal
-    //   WHERE isVisible =1
-    //   `
+    const result = await sql.query(
+      `
+      SELECT *
+  FROM dbo.ClassEntity ce
+  LEFT JOIN dbo.CatalogItemXrefPortal cip 
+  ON ce.classID = cip.catalogItemID
+  WHERE cip.portalID =2 
+      `
 
-    // )
-    // for(const item of result.recordset){
+    )
 
-    //   const classObj = await Classes.findOne({ classID: item.catalogItemID });
-    //   if(classObj){
-    //     await Classes.updateOne(
-    //       { _id: classObj._id },
-    //       {
-    //         $set: {
-    //           classType: item.isFree === 1 ? "paid" : "free"
-    //         },
-    //       },
-    //     );
-    //     console.log(`Updated class ${classObj._id} ${classObj.classType} ${item.isFree} ${item.catalogItemID}`);
-    //   }
-    // }
+    console.log(result.recordset.length);
+    let count = 0;
+    for(const item of result.recordset){
+
+      const classObj = await Classes.findOne({ classID: item.catalogItemID });
+   
+      if(classObj){
+        await Classes.updateOne(
+          { _id: classObj._id },
+          {
+            $set: {
+              classType: item.isFree ? "paid" : "free"
+            },
+          },
+        );
+        count = count + 1;
+        console.log(`Updated class ${classObj._id} ${classObj.classType} ${item.isFree} ${item.catalogItemID} count: ${count}`);
+      }
+      
+    }
+    console.log("Updated total classes for free/paid:", count);
 
     // migrate field for class is free or not --------------------step6--------
 
@@ -201,31 +210,31 @@ async function migrateData() {
 
  // migrate class code --------------------step7--------
 
-   const classObj = await Classes.find({});
+  //  const classObj = await Classes.find({});
    
-   for(let char of classObj){
+  //  for(let char of classObj){
     
-    if(char?.entityID){
-      const result = await sql.query(
-        `
-        SELECT *
-        from dbo.CatalogItemExtend
-        WHERE entityID = ${char.entityID}
-        `
-      )
+  //   if(char?.entityID){
+  //     const result = await sql.query(
+  //       `
+  //       SELECT *
+  //       from dbo.CatalogItemExtend
+  //       WHERE entityID = ${char.entityID}
+  //       `
+  //     )
 
-      await Classes.updateOne(
-        { _id: char._id },
-        {
-          $set: {
-            code: result?.recordset?.[0]?.code || null
-          },
-        },
-      );
-      console.log(`Updated class ${char._id} → ${result?.recordset?.[0]?.code || null}`);
+  //     await Classes.updateOne(
+  //       { _id: char._id },
+  //       {
+  //         $set: {
+  //           code: result?.recordset?.[0]?.code || null
+  //         },
+  //       },
+  //     );
+  //     console.log(`Updated class ${char._id} → ${result?.recordset?.[0]?.code || null}`);
 
-    }
-   }
+  //   }
+  //  }
 
     console.log("Migration complete");
     process.exit(0);
